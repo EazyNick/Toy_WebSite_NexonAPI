@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nexon Player Info Display</title>
+    <link href="https://unpkg.com/tailwindcss@^2.0/dist/tailwind.min.css" rel="stylesheet">
+    <script>
+        // OUID를 검색하는 함수
+            async function fetchOuid(racerName) {
+            const ouidUrl = `https://open.api.nexon.com/kartrush/v1/id?racer_name=${encodeURIComponent(racerName)}`;
+        try {
+            const response = await fetch(ouidUrl, {
+                method: 'GET',
+                headers: {
+                    'x-nxopen-api-key': 'test_4dc09f56c3a7f32f03ef482df771f73a8b04349ab3a40b113f4f32d2a12e1e53ef238829facdf48953b964fd1e431561', // 실제 API 키를 입력해야 합니다.
+                }
+            });
+            if (!response.ok) throw new Error('OUID not found or API request failed');
+            const data = await response.json();
+            if (data && data.ouid_info && data.ouid_info.length > 0) {
+                return data.ouid_info[0].ouid; // 첫 번째 ouid 정보를 반환합니다.
+            } else {
+                throw new Error('OUID not found in the response');
+            }
+        } catch (error) {
+            console.error('Error fetching OUID:', error);
+            alert('OUID not found or there was an error with the request.');
+            return null; // 오류가 발생한 경우 null을 반환합니다.
+        }
+    }
+
+            // OUID를 사용하여 타이틀과 장비 정보를 검색하는 함수
+            async function fetchTitleAndEquipment(ouid) {
+                const titleEquipmentUrl = `https://open.api.nexon.com/kartrush/v1/user/title-equipment?ouid=${ouid}`;
+                try {
+                    const response = await fetch(titleEquipmentUrl, {
+                        method: 'GET',
+                        headers: {
+                            'x-nxopen-api-key': 'test_4dc09f56c3a7f32f03ef482df771f73a8b04349ab3a40b113f4f32d2a12e1e53ef238829facdf48953b964fd1e431561', // 실제 API 키를 입력해야 합니다.
+                        }
+                    });
+                    if (!response.ok) throw new Error('Title and equipment not found or API request failed');
+                    const data = await response.json();
+                    displayTitleAndEquipment(data); // 화면에 표시하는 함수를 호출합니다.
+                } catch (error) {
+                    console.error('Error fetching title and equipment:', error);
+                    alert('Title and equipment not found or there was an error with the request.');
+                }
+            }
+                // 화면에 타이틀과 장비 정보를 표시하는 함수
+                function displayTitleAndEquipment(data) {
+            const playerInfoSection = document.getElementById('player-info');
+            // Clear previous content
+            playerInfoSection.innerHTML = '';
+            // Check if the 'title_equipment' array is empty
+            if (data.title_equipment && data.title_equipment.length > 0) {
+                // If it has items, display them
+                const titleEquipmentHtml = data.title_equipment.map(item => `
+                    <p>Title: ${item.title || "No title"}</p>
+                    <p>Equipment: ${item.equipment || "No equipment"}</p>
+                `).join('');
+                playerInfoSection.innerHTML = titleEquipmentHtml;
+            } else {
+                // If it is empty, display a message indicating no title
+                playerInfoSection.innerHTML = '<p>This player does not have any titles or equipment.</p>';
+            }
+            playerInfoSection.classList.remove('hidden');
+        }
+
+
+
+            // 사용자가 닉네임을 입력하면 호출되는 함수
+            async function handleSearch() {
+                const racerName = document.getElementById('search-player').value.trim();
+                if (racerName) {
+                    const ouid = await fetchOuid(racerName); // OUID를 검색합니다.
+                    if (ouid) {
+                        fetchTitleAndEquipment(ouid); // OUID를 사용하여 타이틀과 장비 정보를 검색합니다.
+                    }
+                } else {
+                    alert('Please enter a racer name.');
+                }
+            }
+
+            document.addEventListener('DOMContentLoaded', () => {
+                const searchButton = document.getElementById('search-button');
+                searchButton.addEventListener('click', handleSearch);
+            });
+    </script>
+</head>
+<body class="bg-gray-800 text-white">
+    <header class="bg-gray-900 text-white">
+        <div class="max-w-6xl mx-auto px-4 py-6">
+            <h1 class="text-xl font-bold">Nexon Player Info Display</h1>
+        </div>
+    </header>
+    <main class="max-w-6xl mx-auto px-4 py-6">
+        <div class="mb-8">
+            <label for="search-player" class="block mb-2">Player Name Search</label>
+            <input type="text" id="search-player" class="w-full p-2 rounded text-black" placeholder="Enter player name...">
+            <button id="search-button" class="mt-2 p-2 bg-blue-500 rounded text-white">Search</button>
+        </div>
+        <section id="player-info" class="mb-8 hidden">
+            <h2 class="text-lg font-bold mb-4">Player Information</h2>
+            <!-- Player information will be displayed here -->
+        </section>
+    </main>
+</body>
+</html>
